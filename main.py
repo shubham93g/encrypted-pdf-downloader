@@ -40,7 +40,7 @@ CREDENTIALS_FILE = "credentials.json"
 
 def load_config() -> dict[str, Any]:
     load_dotenv()
-    required = ["SENDER_EMAIL", "SUBJECT_PREFIX", "PDF_PASSWORD"]
+    required = ["SENDER_EMAIL", "SUBJECT_PREFIX"]
     missing = [k for k in required if not os.getenv(k)]
     if missing:
         sys.exit(f"Error: missing required environment variables: {', '.join(missing)}")
@@ -48,7 +48,7 @@ def load_config() -> dict[str, Any]:
     return {
         "sender_email": os.getenv("SENDER_EMAIL"),
         "subject_prefix": os.getenv("SUBJECT_PREFIX"),
-        "pdf_password": os.getenv("PDF_PASSWORD"),
+        "pdf_password": os.getenv("PDF_PASSWORD", ""),
         "output_dir": os.getenv("OUTPUT_DIR", "./pdfs"),
         "max_pdfs": int(os.getenv("MAX_PDFS", "6")),
         "overwrite_files": os.getenv("OVERWRITE_FILES", "false").strip().lower() == "true",
@@ -156,6 +156,9 @@ def download_attachment(service: Any, message_id: str, attachment_id: str) -> by
 
 def decrypt_pdf(pdf_bytes: bytes, password: str) -> bytes:
     reader = PdfReader(io.BytesIO(pdf_bytes))
+    if not reader.is_encrypted:
+        log.info("       PDF is not encrypted — saving as-is.")
+        return pdf_bytes
     if reader.decrypt(password) == 0:
         raise FileNotDecryptedError("Incorrect password")
     writer = PdfWriter()
@@ -247,7 +250,7 @@ def main() -> None:
 
         pdf_bytes = download_attachment(service, message_id, attachment_id)
 
-        log.info("       Decrypting PDF...")
+        log.info("       Processing PDF...")
         try:
             decrypted_bytes = decrypt_pdf(pdf_bytes, config["pdf_password"])
         except FileNotDecryptedError:
