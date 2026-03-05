@@ -163,10 +163,12 @@ def decrypt_pdf(pdf_bytes, password):
     return out.getvalue()
 
 
-def save_pdf(pdf_bytes, output_dir, index, date):
-    month = date.strftime("%B")
+def save_pdf(pdf_bytes, output_dir, index, date, original_filename):
     year = date.strftime("%Y")
-    filename = f"{index:02d}-{month}-{year}.pdf"
+    month = date.strftime("%b")
+    day = date.strftime("%d")
+    stem = Path(original_filename).stem
+    filename = f"{index:02d}_{year}-{month}-{day}_{stem}.pdf"
     output_path = Path(output_dir) / filename
     output_path.write_bytes(pdf_bytes)
     return output_path
@@ -234,7 +236,7 @@ def main():
                 "Check PDF_PASSWORD in your .env file."
             )
 
-        output_path = save_pdf(decrypted_bytes, output_dir, index, date)
+        output_path = save_pdf(decrypted_bytes, output_dir, index, date, filename)
         print(f"       Saved: {output_path}\n")
 
     print(f"Done. {len(emails_with_dates)} PDF(s) saved to '{output_dir}/'.")

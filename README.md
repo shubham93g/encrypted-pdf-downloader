@@ -7,7 +7,7 @@ A Python script that fetches emails from Gmail, decrypts the password-protected 
 1. Authenticates with your Gmail account via OAuth2 (read-only access)
 2. Searches for emails from a specific sender address that contain a subject keyword and a PDF attachment
 3. Downloads and decrypts the PDFs using a shared password
-4. Saves them as `01-Month-Year.pdf`, `02-Month-Year.pdf`, etc. — most recent first
+4. Saves them as `01_2026-Mar-05_Document.pdf`, `02_2026-Feb-03_Document.pdf`, etc. — most recent first
 
 ## Prerequisites
 
@@ -88,16 +88,16 @@ On the first run, your browser will open for Gmail authorization. Once authorize
 
 ## Output
 
-PDFs are saved in the output directory with filenames based on when the email was received:
+PDFs are saved in the output directory with filenames in the format `{index}_{YYYY}-{Mon}-{DD}_{OriginalName}.pdf`:
 
 ```
 pdfs/
-├── 01-March-2026.pdf     ← most recent
-├── 02-February-2026.pdf
-├── 03-January-2026.pdf
-├── 04-December-2025.pdf
-├── 05-November-2025.pdf
-└── 06-October-2025.pdf   ← oldest
+├── 01_2026-Mar-05_Document.pdf     ← most recent
+├── 02_2026-Feb-03_Document.pdf
+├── 03_2026-Jan-06_Document.pdf
+├── 04_2025-Dec-04_Document.pdf
+├── 05_2025-Nov-05_Document.pdf
+└── 06_2025-Oct-03_Document.pdf     ← oldest
 ```
 
 ## Security

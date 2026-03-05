@@ -25,7 +25,7 @@ Single-file Python script that fetches password-protected PDFs from Gmail and sa
 - `MAX_PDFS` — how many recent PDFs to fetch (default: 6)
 
 ## Output filename format
-`{index:02d}-{Month}-{YYYY}.pdf` — index 01 = most recent email by received date.
+`{index:02d}_{YYYY}-{Mon}-{DD}_{OriginalFileStem}.pdf` — e.g. `01_2026-Mar-05_Document.pdf`. Index 01 = most recent email by received date.
 
 ## Gmail OAuth2 scope
 `gmail.readonly` — read-only, minimal privilege.
