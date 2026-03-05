@@ -74,6 +74,7 @@ SUBJECT_PREFIX=Your subject prefix here    # Subject must start with this (case-
 PDF_PASSWORD=your_pdf_password             # Password to unlock the PDFs
 OUTPUT_DIR=./pdfs                          # Where to save the decrypted PDFs
 MAX_PDFS=6                                 # How many recent PDFs to fetch
+OVERWRITE_FILES=false                      # Set to true to overwrite existing files instead of appending a suffix
 ```
 
 > `OUTPUT_DIR` can be an absolute path (e.g. `/Users/you/Documents/pdfs`) or a path relative to the project root.
