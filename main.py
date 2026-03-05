@@ -40,14 +40,14 @@ CREDENTIALS_FILE = "credentials.json"
 
 def load_config() -> dict[str, Any]:
     load_dotenv()
-    required = ["SENDER_EMAIL", "SUBJECT_PREFIX"]
+    required = ["SENDER_EMAIL", "SUBJECT_KEYWORD"]
     missing = [k for k in required if not os.getenv(k)]
     if missing:
         sys.exit(f"Error: missing required environment variables: {', '.join(missing)}")
 
     return {
         "sender_email": os.getenv("SENDER_EMAIL"),
-        "subject_prefix": os.getenv("SUBJECT_PREFIX"),
+        "subject_keyword": os.getenv("SUBJECT_KEYWORD"),
         "pdf_password": os.getenv("PDF_PASSWORD", ""),
         "output_dir": os.getenv("OUTPUT_DIR", "./pdfs"),
         "max_pdfs": int(os.getenv("MAX_PDFS", "6")),
@@ -80,10 +80,8 @@ def get_gmail_service() -> Any:
     return build("gmail", "v1", credentials=creds)
 
 
-def search_pdf_emails(service: Any, sender_email: str, subject_prefix: str, max_results: int) -> list[dict]:
-    # Use the first word of the prefix as the Gmail search term (broad pre-filter)
-    search_word = subject_prefix.split()[0]
-    query = f"from:{sender_email} subject:{search_word}"
+def search_pdf_emails(service: Any, sender_email: str, subject_keyword: str, max_results: int) -> list[dict]:
+    query = f"from:{sender_email} subject:{subject_keyword} has:attachment"
     log.info("  Gmail query: %s", query)
     result = (
         service.users()
@@ -133,13 +131,17 @@ def find_pdf_attachment(service: Any, message_id: str) -> tuple[Optional[str], O
                     return attachment_id, filename
             sub_parts = part.get("parts", [])
             if sub_parts:
-                result = find_in_parts(sub_parts)
-                if result:
-                    return result
+                attachment_id, filename = find_in_parts(sub_parts)
+                if attachment_id:
+                    return attachment_id, filename
         return None, None
 
-    parts = msg.get("payload", {}).get("parts", [])
-    return find_in_parts(parts)
+    payload = msg.get("payload", {})
+    parts = payload.get("parts", [])
+    if parts:
+        return find_in_parts(parts)
+    # Single-part message — check the payload itself
+    return find_in_parts([payload])
 
 
 def download_attachment(service: Any, message_id: str, attachment_id: str) -> bytes:
@@ -205,66 +207,61 @@ def main() -> None:
     service = get_gmail_service()
 
     log.info(
-        "Searching for up to %d matching emails from %s with subject starting with '%s'...",
+        "Searching for up to %d matching emails from %s with subject containing '%s'...",
         config["max_pdfs"],
         config["sender_email"],
-        config["subject_prefix"],
+        config["subject_keyword"],
     )
     messages = search_pdf_emails(
         service,
         config["sender_email"],
-        config["subject_prefix"],
+        config["subject_keyword"],
         config["max_pdfs"],
     )
 
     if not messages:
-        log.warning("No matching emails found. Check your SENDER_EMAIL and SUBJECT_PREFIX settings.")
+        log.warning("No matching emails found. Check your SENDER_EMAIL and SUBJECT_KEYWORD settings.")
         return
 
     log.info("Found %d candidate email(s). Fetching metadata...", len(messages))
 
-    # Fetch metadata, apply prefix filter, sort descending (most recent first)
-    emails_with_dates = []
+    # Fetch metadata and sort descending (most recent first)
+    emails = []
     for msg in messages:
         date, subject = get_email_metadata(service, msg["id"])
         if not date:
             log.warning("  Warning: could not parse date for message %s, skipping.", msg["id"])
             continue
-        if not subject.lower().startswith(config["subject_prefix"].lower()):
-            log.info("  Skipping: subject does not start with prefix — \"%s\"", subject)
-            continue
-        emails_with_dates.append((msg["id"], date))
+        emails.append((msg["id"], date, subject))
 
-    emails_with_dates.sort(key=lambda x: x[1], reverse=True)
+    emails.sort(key=lambda x: x[1], reverse=True)
 
-    log.info("Processing %d PDF(s)...", len(emails_with_dates))
+    log.info("Processing %d PDF(s)...", len(emails))
 
-    for index, (message_id, date) in enumerate(emails_with_dates, start=1):
-        label = date.strftime("%B %Y")
-        log.info("  [%02d] %s — downloading attachment...", index, label)
+    for index, (message_id, date, subject) in enumerate(emails, start=1):
+        log.info("  [%02d] %s — downloading attachment...", index, subject)
 
         attachment_id, filename = find_pdf_attachment(service, message_id)
         if not attachment_id:
-            log.warning("       Warning: no PDF attachment found in email dated %s, skipping.", label)
+            log.warning("       Warning: no PDF attachment found in email \"%s\", skipping.", subject)
             continue
 
         pdf_bytes = download_attachment(service, message_id, attachment_id)
 
-        log.info("       Processing PDF...")
         try:
             decrypted_bytes = decrypt_pdf(pdf_bytes, config["pdf_password"])
         except FileNotDecryptedError:
             log.warning(
-                "       Warning: incorrect PDF password for email dated %s, skipping. "
+                "       Warning: incorrect PDF password for email \"%s\", skipping. "
                 "Check PDF_PASSWORD in your .env file.",
-                label,
+                subject,
             )
             continue
 
         output_path = save_pdf(decrypted_bytes, output_dir, index, date, filename, config["overwrite_files"])
         log.info("       Saved: %s", output_path)
 
-    log.info("Done. %d PDF(s) saved to '%s/'.", len(emails_with_dates), output_dir)
+    log.info("Done. %d PDF(s) saved to '%s/'.", len(emails), output_dir)
 
 
 if __name__ == "__main__":
