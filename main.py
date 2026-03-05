@@ -226,19 +226,19 @@ def main() -> None:
     log.info("Found %d candidate email(s). Fetching metadata...", len(messages))
 
     # Fetch metadata and sort descending (most recent first)
-    emails_with_dates = []
+    emails = []
     for msg in messages:
         date, subject = get_email_metadata(service, msg["id"])
         if not date:
             log.warning("  Warning: could not parse date for message %s, skipping.", msg["id"])
             continue
-        emails_with_dates.append((msg["id"], date, subject))
+        emails.append((msg["id"], date, subject))
 
-    emails_with_dates.sort(key=lambda x: x[1], reverse=True)
+    emails.sort(key=lambda x: x[1], reverse=True)
 
-    log.info("Processing %d PDF(s)...", len(emails_with_dates))
+    log.info("Processing %d PDF(s)...", len(emails))
 
-    for index, (message_id, date, subject) in enumerate(emails_with_dates, start=1):
+    for index, (message_id, date, subject) in enumerate(emails, start=1):
         log.info("  [%02d] %s — downloading attachment...", index, subject)
 
         attachment_id, filename = find_pdf_attachment(service, message_id)
@@ -261,7 +261,7 @@ def main() -> None:
         output_path = save_pdf(decrypted_bytes, output_dir, index, date, filename, config["overwrite_files"])
         log.info("       Saved: %s", output_path)
 
-    log.info("Done. %d PDF(s) saved to '%s/'.", len(emails_with_dates), output_dir)
+    log.info("Done. %d PDF(s) saved to '%s/'.", len(emails), output_dir)
 
 
 if __name__ == "__main__":
