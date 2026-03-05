@@ -20,14 +20,14 @@ CREDENTIALS_FILE = "credentials.json"
 
 def load_config():
     load_dotenv()
-    required = ["SENDER_EMAIL", "SUBJECT_KEYWORD", "PDF_PASSWORD"]
+    required = ["SENDER_EMAIL", "SUBJECT_PREFIX", "PDF_PASSWORD"]
     missing = [k for k in required if not os.getenv(k)]
     if missing:
         sys.exit(f"Error: missing required environment variables: {', '.join(missing)}")
 
     return {
         "sender_email": os.environ["SENDER_EMAIL"],
-        "subject_keyword": os.environ["SUBJECT_KEYWORD"],
+        "subject_prefix": os.environ["SUBJECT_PREFIX"],
         "pdf_password": os.environ["PDF_PASSWORD"],
         "output_dir": os.getenv("OUTPUT_DIR", "./payslips"),
         "max_payslips": int(os.getenv("MAX_PAYSLIPS", "6")),
@@ -59,8 +59,10 @@ def get_gmail_service():
     return build("gmail", "v1", credentials=creds)
 
 
-def search_payslip_emails(service, sender_email, subject_keyword, max_results):
-    query = f"from:{sender_email} subject:{subject_keyword} has:attachment"
+def search_payslip_emails(service, sender_email, subject_prefix, max_results):
+    # Use the first word of the prefix as the Gmail search term (broad pre-filter)
+    search_word = subject_prefix.split()[0]
+    query = f"from:{sender_email} subject:{search_word} has:attachment"
     result = (
         service.users()
         .messages()
@@ -70,14 +72,16 @@ def search_payslip_emails(service, sender_email, subject_keyword, max_results):
     return result.get("messages", [])
 
 
-def get_email_date(service, message_id):
+def get_email_metadata(service, message_id):
     msg = (
         service.users()
         .messages()
-        .get(userId="me", id=message_id, format="metadata", metadataHeaders=["Date"])
+        .get(userId="me", id=message_id, format="metadata", metadataHeaders=["Date", "Subject"])
         .execute()
     )
     headers = msg.get("payload", {}).get("headers", [])
+    date = None
+    subject = ""
     for header in headers:
         if header["name"] == "Date":
             date_str = header["value"]
@@ -89,18 +93,23 @@ def get_email_date(service, message_id):
                 "%d %b %Y %H:%M:%S %Z",
             ):
                 try:
-                    return datetime.strptime(date_str.strip(), fmt)
+                    date = datetime.strptime(date_str.strip(), fmt)
+                    break
                 except ValueError:
                     continue
-            # Fallback: strip timezone name/offset and retry
-            parts = date_str.strip().rsplit(" ", 1)
-            if len(parts) == 2:
-                for fmt in ("%a, %d %b %Y %H:%M:%S", "%d %b %Y %H:%M:%S"):
-                    try:
-                        return datetime.strptime(parts[0].strip(), fmt)
-                    except ValueError:
-                        continue
-    return None
+            if date is None:
+                # Fallback: strip timezone name/offset and retry
+                parts = date_str.strip().rsplit(" ", 1)
+                if len(parts) == 2:
+                    for fmt in ("%a, %d %b %Y %H:%M:%S", "%d %b %Y %H:%M:%S"):
+                        try:
+                            date = datetime.strptime(parts[0].strip(), fmt)
+                            break
+                        except ValueError:
+                            continue
+        elif header["name"] == "Subject":
+            subject = header["value"]
+    return date, subject
 
 
 def find_pdf_attachment(service, message_id):
@@ -173,29 +182,32 @@ def main():
 
     print(
         f"Searching for up to {config['max_payslips']} payslip emails "
-        f"from {config['sender_email']} with subject containing '{config['subject_keyword']}'..."
+        f"from {config['sender_email']} with subject starting with '{config['subject_prefix']}'..."
     )
     messages = search_payslip_emails(
         service,
         config["sender_email"],
-        config["subject_keyword"],
+        config["subject_prefix"],
         config["max_payslips"],
     )
 
     if not messages:
-        print("No payslip emails found. Check your SENDER_EMAIL and SUBJECT_KEYWORD settings.")
+        print("No payslip emails found. Check your SENDER_EMAIL and SUBJECT_PREFIX settings.")
         return
 
-    print(f"Found {len(messages)} email(s). Fetching dates...")
+    print(f"Found {len(messages)} candidate email(s). Fetching metadata...")
 
-    # Fetch dates and sort descending (most recent first)
+    # Fetch metadata, apply prefix filter, sort descending (most recent first)
     emails_with_dates = []
     for msg in messages:
-        date = get_email_date(service, msg["id"])
-        if date:
-            emails_with_dates.append((msg["id"], date))
-        else:
+        date, subject = get_email_metadata(service, msg["id"])
+        if not date:
             print(f"  Warning: could not parse date for message {msg['id']}, skipping.")
+            continue
+        if not subject.lower().startswith(config["subject_prefix"].lower()):
+            print(f"  Skipping: subject does not start with prefix — \"{subject}\"")
+            continue
+        emails_with_dates.append((msg["id"], date))
 
     emails_with_dates.sort(key=lambda x: x[1], reverse=True)
 

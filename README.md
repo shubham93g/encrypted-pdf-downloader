@@ -64,11 +64,11 @@ This will:
 Edit the `.env` file created by `setup.sh`:
 
 ```env
-SENDER_EMAIL=payroll@yourcompany.com   # Who sends the payslip emails
-SUBJECT_KEYWORD=payslip                # Keyword that appears in the subject
-PDF_PASSWORD=your_pdf_password         # Password to unlock the PDFs
-OUTPUT_DIR=./payslips                  # Where to save the decrypted PDFs
-MAX_PAYSLIPS=6                         # How many recent payslips to fetch
+SENDER_EMAIL=payroll@yourcompany.com        # Who sends the payslip emails
+SUBJECT_PREFIX=Payslip for the month of    # Subject must start with this (case-insensitive)
+PDF_PASSWORD=your_pdf_password              # Password to unlock the PDFs
+OUTPUT_DIR=./payslips                       # Where to save the decrypted PDFs
+MAX_PAYSLIPS=6                              # How many recent payslips to fetch
 ```
 
 > `OUTPUT_DIR` can be an absolute path (e.g. `/Users/you/Documents/payslips`) or a path relative to the project root.

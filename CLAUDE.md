@@ -19,7 +19,7 @@ Single-file Python script that fetches password-protected payslip PDFs from Gmai
 
 ## Config variables (all in .env)
 - `SENDER_EMAIL` — sender address to filter by
-- `SUBJECT_KEYWORD` — subject keyword to filter by
+- `SUBJECT_PREFIX` — literal string the subject must start with (case-insensitive)
 - `PDF_PASSWORD` — shared PDF decryption password
 - `OUTPUT_DIR` — where to save PDFs (default: `./payslips`)
 - `MAX_PAYSLIPS` — how many recent payslips to fetch (default: 6)
