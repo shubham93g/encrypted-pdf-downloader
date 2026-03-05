@@ -5,7 +5,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-import pikepdf
+from pypdf import PdfReader, PdfWriter
+from pypdf.errors import FileNotDecryptedError
 from dotenv import load_dotenv
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -142,11 +143,14 @@ def download_attachment(service, message_id, attachment_id):
 
 
 def decrypt_pdf(pdf_bytes, password):
-    encrypted = io.BytesIO(pdf_bytes)
-    decrypted = io.BytesIO()
-    with pikepdf.open(encrypted, password=password) as pdf:
-        pdf.save(decrypted)
-    return decrypted.getvalue()
+    reader = PdfReader(io.BytesIO(pdf_bytes))
+    reader.decrypt(password)
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+    out = io.BytesIO()
+    writer.write(out)
+    return out.getvalue()
 
 
 def save_pdf(pdf_bytes, output_dir, index, date):
@@ -211,7 +215,7 @@ def main():
         print(f"       Decrypting PDF...")
         try:
             decrypted_bytes = decrypt_pdf(pdf_bytes, config["pdf_password"])
-        except pikepdf.PasswordError:
+        except FileNotDecryptedError:
             sys.exit(
                 f"Error: incorrect PDF password for email dated {label}. "
                 "Check PDF_PASSWORD in your .env file."
