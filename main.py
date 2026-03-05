@@ -229,23 +229,21 @@ def main() -> None:
     emails_with_dates = []
     for msg in messages:
         date, subject = get_email_metadata(service, msg["id"])
-        log.debug("  Subject: \"%s\"", subject)
         if not date:
             log.warning("  Warning: could not parse date for message %s, skipping.", msg["id"])
             continue
-        emails_with_dates.append((msg["id"], date))
+        emails_with_dates.append((msg["id"], date, subject))
 
     emails_with_dates.sort(key=lambda x: x[1], reverse=True)
 
     log.info("Processing %d PDF(s)...", len(emails_with_dates))
 
-    for index, (message_id, date) in enumerate(emails_with_dates, start=1):
-        label = date.strftime("%B %Y")
-        log.info("  [%02d] %s — downloading attachment...", index, label)
+    for index, (message_id, date, subject) in enumerate(emails_with_dates, start=1):
+        log.info("  [%02d] %s — downloading attachment...", index, subject)
 
         attachment_id, filename = find_pdf_attachment(service, message_id)
         if not attachment_id:
-            log.warning("       Warning: no PDF attachment found in email dated %s, skipping.", label)
+            log.warning("       Warning: no PDF attachment found in email \"%s\", skipping.", subject)
             continue
 
         pdf_bytes = download_attachment(service, message_id, attachment_id)
@@ -255,9 +253,9 @@ def main() -> None:
             decrypted_bytes = decrypt_pdf(pdf_bytes, config["pdf_password"])
         except FileNotDecryptedError:
             log.warning(
-                "       Warning: incorrect PDF password for email dated %s, skipping. "
+                "       Warning: incorrect PDF password for email \"%s\", skipping. "
                 "Check PDF_PASSWORD in your .env file.",
-                label,
+                subject,
             )
             continue
 
