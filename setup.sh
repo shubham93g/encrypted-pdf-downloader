@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "Setting up payslip-downloader..."
+echo "Setting up encrypted-pdf-downloader..."
 
 python3 -m venv .venv
 source .venv/bin/activate
@@ -13,11 +13,11 @@ if [ ! -f .env ]; then
   cp .env.example .env
   echo ""
   echo ".env created from .env.example — fill in your values before running:"
-  echo "  SENDER_EMAIL    — email address that sends your payslips"
-  echo "  SUBJECT_KEYWORD — keyword in the subject line (e.g. payslip)"
+  echo "  SENDER_EMAIL    — email address that sends the PDFs"
+  echo "  SUBJECT_PREFIX  — subject line prefix to filter emails"
   echo "  PDF_PASSWORD    — password to decrypt the PDF attachments"
-  echo "  OUTPUT_DIR      — where to save PDFs (default: ./payslips)"
-  echo "  MAX_PAYSLIPS    — how many recent payslips to fetch (default: 6)"
+  echo "  OUTPUT_DIR      — where to save PDFs (default: ./pdfs)"
+  echo "  MAX_PDFS        — how many recent PDFs to fetch (default: 6)"
 else
   echo ".env already exists, skipping."
 fi

@@ -1,6 +1,6 @@
-# Project: Payslip Downloader
+# Project: Encrypted PDF Downloader
 
-Single-file Python script that fetches password-protected payslip PDFs from Gmail and saves them locally.
+Single-file Python script that fetches password-protected PDFs from Gmail and saves them locally.
 
 ## Stack
 - Python 3.9+, single script (`main.py`)
@@ -21,8 +21,8 @@ Single-file Python script that fetches password-protected payslip PDFs from Gmai
 - `SENDER_EMAIL` — sender address to filter by
 - `SUBJECT_PREFIX` — literal string the subject must start with (case-insensitive)
 - `PDF_PASSWORD` — shared PDF decryption password
-- `OUTPUT_DIR` — where to save PDFs (default: `./payslips`)
-- `MAX_PAYSLIPS` — how many recent payslips to fetch (default: 6)
+- `OUTPUT_DIR` — where to save PDFs (default: `./pdfs`)
+- `MAX_PDFS` — how many recent PDFs to fetch (default: 6)
 
 ## Output filename format
 `{index:02d}-{Month}-{YYYY}.pdf` — index 01 = most recent email by received date.

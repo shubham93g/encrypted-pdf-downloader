@@ -29,8 +29,8 @@ def load_config():
         "sender_email": os.environ["SENDER_EMAIL"],
         "subject_prefix": os.environ["SUBJECT_PREFIX"],
         "pdf_password": os.environ["PDF_PASSWORD"],
-        "output_dir": os.getenv("OUTPUT_DIR", "./payslips"),
-        "max_payslips": int(os.getenv("MAX_PAYSLIPS", "6")),
+        "output_dir": os.getenv("OUTPUT_DIR", "./pdfs"),
+        "max_pdfs": int(os.getenv("MAX_PDFS", "6")),
     }
 
 
@@ -59,7 +59,7 @@ def get_gmail_service():
     return build("gmail", "v1", credentials=creds)
 
 
-def search_payslip_emails(service, sender_email, subject_prefix, max_results):
+def search_pdf_emails(service, sender_email, subject_prefix, max_results):
     # Use the first word of the prefix as the Gmail search term (broad pre-filter)
     search_word = subject_prefix.split()[0]
     query = f"from:{sender_email} subject:{search_word}"
@@ -182,18 +182,18 @@ def main():
     service = get_gmail_service()
 
     print(
-        f"Searching for up to {config['max_payslips']} payslip emails "
+        f"Searching for up to {config['max_pdfs']} matching emails "
         f"from {config['sender_email']} with subject starting with '{config['subject_prefix']}'..."
     )
-    messages = search_payslip_emails(
+    messages = search_pdf_emails(
         service,
         config["sender_email"],
         config["subject_prefix"],
-        config["max_payslips"],
+        config["max_pdfs"],
     )
 
     if not messages:
-        print("No payslip emails found. Check your SENDER_EMAIL and SUBJECT_PREFIX settings.")
+        print("No matching emails found. Check your SENDER_EMAIL and SUBJECT_PREFIX settings.")
         return
 
     print(f"Found {len(messages)} candidate email(s). Fetching metadata...")
@@ -212,7 +212,7 @@ def main():
 
     emails_with_dates.sort(key=lambda x: x[1], reverse=True)
 
-    print(f"Processing {len(emails_with_dates)} payslip(s)...\n")
+    print(f"Processing {len(emails_with_dates)} PDF(s)...\n")
 
     for index, (message_id, date) in enumerate(emails_with_dates, start=1):
         label = date.strftime("%B %Y")
@@ -237,7 +237,7 @@ def main():
         output_path = save_pdf(decrypted_bytes, output_dir, index, date)
         print(f"       Saved: {output_path}\n")
 
-    print(f"Done. {len(emails_with_dates)} payslip(s) saved to '{output_dir}/'.")
+    print(f"Done. {len(emails_with_dates)} PDF(s) saved to '{output_dir}/'.")
 
 
 if __name__ == "__main__":
