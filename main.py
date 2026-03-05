@@ -8,6 +8,21 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any, Optional
 
+_LEVEL_ABBREV = {
+    logging.DEBUG: "DEBG",
+    logging.INFO: "INFO",
+    logging.WARNING: "WARN",
+    logging.ERROR: "ERRO",
+    logging.CRITICAL: "CRIT",
+}
+
+
+class _BriefFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        record.levelname = _LEVEL_ABBREV.get(record.levelno, record.levelname[:4])
+        return super().format(record)
+
+
 log = logging.getLogger(__name__)
 
 from pypdf import PdfReader, PdfWriter
@@ -172,7 +187,10 @@ def save_pdf(pdf_bytes: bytes, output_dir: Path, index: int, date: datetime, ori
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    handler = logging.StreamHandler()
+    handler.setFormatter(_BriefFormatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
+    logging.basicConfig(level=getattr(logging, log_level, logging.INFO), handlers=[handler])
 
     config = load_config()
 
@@ -240,7 +258,7 @@ def main() -> None:
             continue
 
         output_path = save_pdf(decrypted_bytes, output_dir, index, date, filename, config["overwrite_files"])
-        log.info("       Saved: %s\n", output_path)
+        log.info("       Saved: %s", output_path)
 
     log.info("Done. %d PDF(s) saved to '%s/'.", len(emails_with_dates), output_dir)
 
