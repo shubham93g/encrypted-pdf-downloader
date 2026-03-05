@@ -22,7 +22,10 @@ A Python script that fetches your payslip emails from Gmail, decrypts the passwo
 #### 1a. Create a project and enable the Gmail API
 
 1. Open [Google Cloud Console — Create Project](https://console.cloud.google.com/projectcreate), give it a name (e.g. `payslip-downloader`), and click **Create**
-2. Open [Gmail API — Enable](https://console.cloud.google.com/apis/library/gmail.googleapis.com), make sure your new project is selected in the top bar, and click **Enable**
+2. After the project is created, Google will show a notification — click **Select Project** to switch to it (or select it from the project dropdown in the top bar)
+3. Open [Gmail API — Enable](https://console.cloud.google.com/apis/library/gmail.googleapis.com) and click **Enable**
+
+> **Important:** All steps in section 1 (API, consent screen, and credentials) must be done in the same project. Confirm the correct project name is shown in the top-left dropdown before proceeding.
 
 #### 1b. Configure the OAuth consent screen
 
@@ -104,6 +107,9 @@ payslips/
 - Gmail access uses the `gmail.readonly` scope — the script cannot send, delete, or modify emails
 
 ## Troubleshooting
+
+**"Gmail API has not been used in project"**
+The Gmail API is not enabled in the project your credentials belong to. Open [Gmail API — Enable](https://console.cloud.google.com/apis/library/gmail.googleapis.com), make sure the correct project is selected in the top-left dropdown, and click **Enable**. Then delete `token.json` and re-run `./run.sh`.
 
 **"credentials.json not found"**
 Download your OAuth credentials from Google Cloud Console and place them in the project root. See step 1 above.
