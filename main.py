@@ -187,6 +187,7 @@ def save_pdf(pdf_bytes: bytes, output_dir: Path, index: int, date: datetime, ori
 
 
 def main() -> None:
+    load_dotenv()
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     handler = logging.StreamHandler()
     handler.setFormatter(_BriefFormatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
