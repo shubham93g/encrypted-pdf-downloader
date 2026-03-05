@@ -1,0 +1,25 @@
+# Secrets and credentials — never commit these
+.env
+credentials.json
+token.json
+
+# Downloaded payslips
+payslips/
+
+# Python virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# macOS
+.DS_Store
