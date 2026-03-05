@@ -17,18 +17,36 @@ A Python script that fetches your payslip emails from Gmail, decrypts the passwo
 
 ## Setup
 
-### 1. Google Cloud — enable Gmail API and get credentials
+### 1. Google Cloud — enable Gmail API and create OAuth credentials
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project (or select an existing one)
-3. Navigate to **APIs & Services > Library**, search for **Gmail API**, and click **Enable**
-4. Go to **APIs & Services > Credentials**
-5. Click **Create Credentials > OAuth client ID**
-6. Choose **Desktop app** as the application type
-7. Download the JSON file and rename it to `credentials.json`
-8. Place `credentials.json` in the project root directory
+#### 1a. Create a project and enable the Gmail API
 
-> Note: On first run the script will open a browser window asking you to authorize access. After authorization, a `token.json` file is saved so you won't need to authorize again.
+1. Open [Google Cloud Console — Create Project](https://console.cloud.google.com/projectcreate), give it a name (e.g. `payslip-downloader`), and click **Create**
+2. Open [Gmail API — Enable](https://console.cloud.google.com/apis/library/gmail.googleapis.com), make sure your new project is selected in the top bar, and click **Enable**
+
+#### 1b. Configure the OAuth consent screen
+
+Before creating credentials, Google requires a consent screen to be set up.
+
+1. Open [OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent)
+2. Select **External** and click **Create**
+3. Fill in the required fields:
+   - **App name**: anything (e.g. `Payslip Downloader`)
+   - **User support email**: your Gmail address
+   - **Developer contact email**: your Gmail address
+4. Click **Save and Continue** through the remaining screens (Scopes, Test users, Summary) — no changes needed on those pages
+
+#### 1c. Create an OAuth client ID
+
+1. Open [Credentials](https://console.cloud.google.com/apis/credentials) and click **+ Create Credentials > OAuth client ID**
+2. Set **Application type** to **Desktop app**
+3. Give it any name (e.g. `Payslip Downloader`) and click **Create**
+4. In the confirmation dialog, click **Download JSON**
+5. Rename the downloaded file to `credentials.json` and place it in the project root
+
+#### What happens on first run
+
+The first time you run the script, a browser window opens asking you to sign in and grant read-only Gmail access. After you approve, a `token.json` file is saved automatically — subsequent runs skip the browser step entirely.
 
 ### 2. Install dependencies
 
