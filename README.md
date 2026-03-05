@@ -100,6 +100,12 @@ pdfs/
 └── 06_2025-Oct-03_Document.pdf     ← oldest
 ```
 
+If a file with the same name already exists, the script appends a numeric suffix (macOS-style) rather than overwriting, and prints a warning:
+
+```
+Warning: file already exists, saving as 01_2026-Mar-05_Document (2).pdf
+```
+
 ## Security
 
 - `credentials.json`, `token.json`, and `.env` are all listed in `.gitignore` and will never be committed
