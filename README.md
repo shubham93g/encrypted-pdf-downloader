@@ -70,7 +70,7 @@ Edit the `.env` file created by `setup.sh`:
 
 ```env
 SENDER_EMAIL=sender@example.com            # Who sends the emails with PDF attachments
-SUBJECT_PREFIX=Your subject prefix here    # Subject must start with this (case-insensitive)
+SUBJECT_KEYWORD=Your subject keyword here  # Keyword that must appear anywhere in the subject (case-insensitive)
 PDF_PASSWORD=your_pdf_password             # Password to unlock the PDFs (omit if PDFs are not encrypted)
 OUTPUT_DIR=./pdfs                          # Where to save the decrypted PDFs
 MAX_PDFS=6                                 # How many recent PDFs to fetch
@@ -125,7 +125,7 @@ Download your OAuth credentials from Google Cloud Console and place them in the 
 Double-check the `PDF_PASSWORD` value in your `.env` file.
 
 **"No matching emails found"**
-Verify that `SENDER_EMAIL` exactly matches the sender's address and that `SUBJECT_PREFIX` matches the beginning of the subject line. You can confirm by searching Gmail directly with `from:sender@example.com subject:firstword`.
+Verify that `SENDER_EMAIL` exactly matches the sender's address and that `SUBJECT_KEYWORD` appears in the subject line. You can confirm by searching Gmail directly with `from:sender@example.com subject:keyword`.
 
 **"App has not completed Google verification"**
 Your OAuth app is in Testing mode — only approved test users can authorize it. Open the [OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent), scroll to **Test users**, click **+ Add Users**, and add your Gmail address.
