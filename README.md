@@ -34,7 +34,9 @@ Before creating credentials, Google requires a consent screen to be set up.
    - **App name**: anything (e.g. `Payslip Downloader`)
    - **User support email**: your Gmail address
    - **Developer contact email**: your Gmail address
-4. Click **Save and Continue** through the remaining screens (Scopes, Test users, Summary) — no changes needed on those pages
+4. Click **Save and Continue** through the **Scopes** and **Test users** screens
+5. On the **Test users** screen, click **+ Add Users**, enter your Gmail address, and click **Add**
+6. Click **Save and Continue** through to the Summary, then **Back to Dashboard**
 
 #### 1c. Create an OAuth client ID
 
@@ -110,7 +112,10 @@ Download your OAuth credentials from Google Cloud Console and place them in the 
 Double-check the `PDF_PASSWORD` value in your `.env` file.
 
 **"No payslip emails found"**
-Verify that `SENDER_EMAIL` exactly matches the sender's address and that `SUBJECT_KEYWORD` appears in the subject of those emails. You can confirm by searching Gmail directly with `from:sender@example.com subject:keyword`.
+Verify that `SENDER_EMAIL` exactly matches the sender's address and that `SUBJECT_PREFIX` matches the beginning of the subject line. You can confirm by searching Gmail directly with `from:sender@example.com subject:firstword`.
+
+**"App has not completed Google verification"**
+Your OAuth app is in Testing mode — only approved test users can authorize it. Open the [OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent), scroll to **Test users**, click **+ Add Users**, and add your Gmail address.
 
 **Token expired / authorization error**
 Delete `token.json` and run `./run.sh` again to re-authorize.
