@@ -6,7 +6,7 @@ A Python script that fetches emails from Gmail, decrypts the password-protected 
 
 1. Authenticates with your Gmail account via OAuth2 (read-only access)
 2. Searches for emails from a specific sender address that contain a subject keyword and a PDF attachment
-3. Downloads and decrypts the PDFs using a shared password
+3. Downloads the PDF attachments — decrypts them if password-protected, or saves them as-is if unencrypted
 4. Saves them as `01_2026-Mar-05_Document.pdf`, `02_2026-Feb-03_Document.pdf`, etc. — most recent first
 
 ## Prerequisites
@@ -71,7 +71,7 @@ Edit the `.env` file created by `setup.sh`:
 ```env
 SENDER_EMAIL=sender@example.com            # Who sends the emails with PDF attachments
 SUBJECT_PREFIX=Your subject prefix here    # Subject must start with this (case-insensitive)
-PDF_PASSWORD=your_pdf_password             # Password to unlock the PDFs
+PDF_PASSWORD=your_pdf_password             # Password to unlock the PDFs (omit if PDFs are not encrypted)
 OUTPUT_DIR=./pdfs                          # Where to save the decrypted PDFs
 MAX_PDFS=6                                 # How many recent PDFs to fetch
 OVERWRITE_FILES=false                      # Set to true to overwrite existing files instead of appending a suffix
