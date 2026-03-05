@@ -233,7 +233,7 @@ def main() -> None:
 
     emails_with_dates.sort(key=lambda x: x[1], reverse=True)
 
-    log.info("Processing %d PDF(s)...\n", len(emails_with_dates))
+    log.info("Processing %d PDF(s)...", len(emails_with_dates))
 
     for index, (message_id, date) in enumerate(emails_with_dates, start=1):
         label = date.strftime("%B %Y")
