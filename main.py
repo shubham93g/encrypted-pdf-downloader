@@ -248,7 +248,6 @@ def main() -> None:
 
         pdf_bytes = download_attachment(service, message_id, attachment_id)
 
-        log.info("       Processing PDF...")
         try:
             decrypted_bytes = decrypt_pdf(pdf_bytes, config["pdf_password"])
         except FileNotDecryptedError:
