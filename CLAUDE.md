@@ -5,7 +5,7 @@ Single-file Python script that fetches password-protected PDFs from Gmail and sa
 ## Stack
 - Python 3.9+, single script (`main.py`)
 - Gmail API via OAuth2 (`google-api-python-client`, `google-auth-oauthlib`)
-- PDF decryption: `pikepdf`
+- PDF decryption: `pypdf`
 - Config: `python-dotenv` loading from `.env`
 - Venv: `.venv/` managed by `setup.sh`
 
