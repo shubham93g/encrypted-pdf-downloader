@@ -31,6 +31,7 @@ def load_config():
         "pdf_password": os.environ["PDF_PASSWORD"],
         "output_dir": os.getenv("OUTPUT_DIR", "./pdfs"),
         "max_pdfs": int(os.getenv("MAX_PDFS", "6")),
+        "overwrite_files": os.getenv("OVERWRITE_FILES", "false").strip().lower() == "true",
     }
 
 
@@ -163,13 +164,22 @@ def decrypt_pdf(pdf_bytes, password):
     return out.getvalue()
 
 
-def save_pdf(pdf_bytes, output_dir, index, date, original_filename):
+def save_pdf(pdf_bytes, output_dir, index, date, original_filename, overwrite=False):
     year = date.strftime("%Y")
     month = date.strftime("%b")
     day = date.strftime("%d")
     stem = Path(original_filename).stem
-    filename = f"{index:02d}_{year}-{month}-{day}_{stem}.pdf"
-    output_path = Path(output_dir) / filename
+    base = f"{index:02d}_{year}-{month}-{day}_{stem}"
+    output_path = Path(output_dir) / f"{base}.pdf"
+    if output_path.exists():
+        if overwrite:
+            print(f"       Warning: overwriting existing file {output_path.name}")
+        else:
+            counter = 2
+            while output_path.exists():
+                output_path = Path(output_dir) / f"{base} ({counter}).pdf"
+                counter += 1
+            print(f"       Warning: file already exists, saving as {output_path.name}")
     output_path.write_bytes(pdf_bytes)
     return output_path
 
@@ -236,7 +246,7 @@ def main():
                 "Check PDF_PASSWORD in your .env file."
             )
 
-        output_path = save_pdf(decrypted_bytes, output_dir, index, date, filename)
+        output_path = save_pdf(decrypted_bytes, output_dir, index, date, filename, config["overwrite_files"])
         print(f"       Saved: {output_path}\n")
 
     print(f"Done. {len(emails_with_dates)} PDF(s) saved to '{output_dir}/'.")

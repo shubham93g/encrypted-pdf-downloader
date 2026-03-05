@@ -74,6 +74,7 @@ SUBJECT_PREFIX=Your subject prefix here    # Subject must start with this (case-
 PDF_PASSWORD=your_pdf_password             # Password to unlock the PDFs
 OUTPUT_DIR=./pdfs                          # Where to save the decrypted PDFs
 MAX_PDFS=6                                 # How many recent PDFs to fetch
+OVERWRITE_FILES=false                      # Set to true to overwrite existing files instead of appending a suffix
 ```
 
 > `OUTPUT_DIR` can be an absolute path (e.g. `/Users/you/Documents/pdfs`) or a path relative to the project root.
@@ -98,6 +99,12 @@ pdfs/
 ├── 04_2025-Dec-04_Document.pdf
 ├── 05_2025-Nov-05_Document.pdf
 └── 06_2025-Oct-03_Document.pdf     ← oldest
+```
+
+If a file with the same name already exists, the script appends a numeric suffix (macOS-style) rather than overwriting, and prints a warning:
+
+```
+Warning: file already exists, saving as 01_2026-Mar-05_Document (2).pdf
 ```
 
 ## Security
