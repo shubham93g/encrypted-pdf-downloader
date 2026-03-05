@@ -171,12 +171,15 @@ def save_pdf(pdf_bytes, output_dir, index, date, original_filename, overwrite=Fa
     stem = Path(original_filename).stem
     base = f"{index:02d}_{year}-{month}-{day}_{stem}"
     output_path = Path(output_dir) / f"{base}.pdf"
-    if output_path.exists() and not overwrite:
-        counter = 2
-        while output_path.exists():
-            output_path = Path(output_dir) / f"{base} ({counter}).pdf"
-            counter += 1
-        print(f"       Warning: file already exists, saving as {output_path.name}")
+    if output_path.exists():
+        if overwrite:
+            print(f"       Warning: overwriting existing file {output_path.name}")
+        else:
+            counter = 2
+            while output_path.exists():
+                output_path = Path(output_dir) / f"{base} ({counter}).pdf"
+                counter += 1
+            print(f"       Warning: file already exists, saving as {output_path.name}")
     output_path.write_bytes(pdf_bytes)
     return output_path
 
