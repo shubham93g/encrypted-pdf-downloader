@@ -1,9 +1,29 @@
 import base64
 import io
+import logging
 import os
 import sys
 from datetime import datetime
+from email.utils import parsedate_to_datetime
 from pathlib import Path
+from typing import Any, Optional
+
+_LEVEL_ABBREV = {
+    logging.DEBUG: "DEBG",
+    logging.INFO: "INFO",
+    logging.WARNING: "WARN",
+    logging.ERROR: "ERRO",
+    logging.CRITICAL: "CRIT",
+}
+
+
+class _BriefFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        record.levelname = _LEVEL_ABBREV.get(record.levelno, record.levelname[:4])
+        return super().format(record)
+
+
+log = logging.getLogger(__name__)
 
 from pypdf import PdfReader, PdfWriter
 from pypdf.errors import FileNotDecryptedError
@@ -18,7 +38,7 @@ TOKEN_FILE = "token.json"
 CREDENTIALS_FILE = "credentials.json"
 
 
-def load_config():
+def load_config() -> dict[str, Any]:
     load_dotenv()
     required = ["SENDER_EMAIL", "SUBJECT_PREFIX", "PDF_PASSWORD"]
     missing = [k for k in required if not os.getenv(k)]
@@ -26,16 +46,16 @@ def load_config():
         sys.exit(f"Error: missing required environment variables: {', '.join(missing)}")
 
     return {
-        "sender_email": os.environ["SENDER_EMAIL"],
-        "subject_prefix": os.environ["SUBJECT_PREFIX"],
-        "pdf_password": os.environ["PDF_PASSWORD"],
+        "sender_email": os.getenv("SENDER_EMAIL"),
+        "subject_prefix": os.getenv("SUBJECT_PREFIX"),
+        "pdf_password": os.getenv("PDF_PASSWORD"),
         "output_dir": os.getenv("OUTPUT_DIR", "./pdfs"),
         "max_pdfs": int(os.getenv("MAX_PDFS", "6")),
         "overwrite_files": os.getenv("OVERWRITE_FILES", "false").strip().lower() == "true",
     }
 
 
-def get_gmail_service():
+def get_gmail_service() -> Any:
     creds = None
 
     if Path(TOKEN_FILE).exists():
@@ -60,11 +80,11 @@ def get_gmail_service():
     return build("gmail", "v1", credentials=creds)
 
 
-def search_pdf_emails(service, sender_email, subject_prefix, max_results):
+def search_pdf_emails(service: Any, sender_email: str, subject_prefix: str, max_results: int) -> list[dict]:
     # Use the first word of the prefix as the Gmail search term (broad pre-filter)
     search_word = subject_prefix.split()[0]
     query = f"from:{sender_email} subject:{search_word}"
-    print(f"  Gmail query: {query}")
+    log.info("  Gmail query: %s", query)
     result = (
         service.users()
         .messages()
@@ -74,7 +94,7 @@ def search_pdf_emails(service, sender_email, subject_prefix, max_results):
     return result.get("messages", [])
 
 
-def get_email_metadata(service, message_id):
+def get_email_metadata(service: Any, message_id: str) -> tuple[Optional[datetime], str]:
     msg = (
         service.users()
         .messages()
@@ -86,35 +106,16 @@ def get_email_metadata(service, message_id):
     subject = ""
     for header in headers:
         if header["name"] == "Date":
-            date_str = header["value"]
-            # Parse various RFC 2822 date formats
-            for fmt in (
-                "%a, %d %b %Y %H:%M:%S %z",
-                "%a, %d %b %Y %H:%M:%S %Z",
-                "%d %b %Y %H:%M:%S %z",
-                "%d %b %Y %H:%M:%S %Z",
-            ):
-                try:
-                    date = datetime.strptime(date_str.strip(), fmt)
-                    break
-                except ValueError:
-                    continue
-            if date is None:
-                # Fallback: strip timezone name/offset and retry
-                parts = date_str.strip().rsplit(" ", 1)
-                if len(parts) == 2:
-                    for fmt in ("%a, %d %b %Y %H:%M:%S", "%d %b %Y %H:%M:%S"):
-                        try:
-                            date = datetime.strptime(parts[0].strip(), fmt)
-                            break
-                        except ValueError:
-                            continue
+            try:
+                date = parsedate_to_datetime(header["value"].strip())
+            except (ValueError, TypeError):
+                date = None
         elif header["name"] == "Subject":
             subject = header["value"]
     return date, subject
 
 
-def find_pdf_attachment(service, message_id):
+def find_pdf_attachment(service: Any, message_id: str) -> tuple[Optional[str], Optional[str]]:
     msg = (
         service.users()
         .messages()
@@ -141,7 +142,7 @@ def find_pdf_attachment(service, message_id):
     return find_in_parts(parts)
 
 
-def download_attachment(service, message_id, attachment_id):
+def download_attachment(service: Any, message_id: str, attachment_id: str) -> bytes:
     attachment = (
         service.users()
         .messages()
@@ -153,9 +154,10 @@ def download_attachment(service, message_id, attachment_id):
     return base64.urlsafe_b64decode(data)
 
 
-def decrypt_pdf(pdf_bytes, password):
+def decrypt_pdf(pdf_bytes: bytes, password: str) -> bytes:
     reader = PdfReader(io.BytesIO(pdf_bytes))
-    reader.decrypt(password)
+    if reader.decrypt(password) == 0:
+        raise FileNotDecryptedError("Incorrect password")
     writer = PdfWriter()
     for page in reader.pages:
         writer.add_page(page)
@@ -164,7 +166,7 @@ def decrypt_pdf(pdf_bytes, password):
     return out.getvalue()
 
 
-def save_pdf(pdf_bytes, output_dir, index, date, original_filename, overwrite=False):
+def save_pdf(pdf_bytes: bytes, output_dir: Path, index: int, date: datetime, original_filename: str, overwrite: bool = False) -> Path:
     year = date.strftime("%Y")
     month = date.strftime("%b")
     day = date.strftime("%d")
@@ -173,29 +175,37 @@ def save_pdf(pdf_bytes, output_dir, index, date, original_filename, overwrite=Fa
     output_path = Path(output_dir) / f"{base}.pdf"
     if output_path.exists():
         if overwrite:
-            print(f"       Warning: overwriting existing file {output_path.name}")
+            log.warning("       Warning: overwriting existing file %s", output_path.name)
         else:
             counter = 2
             while output_path.exists():
                 output_path = Path(output_dir) / f"{base} ({counter}).pdf"
                 counter += 1
-            print(f"       Warning: file already exists, saving as {output_path.name}")
+            log.warning("       Warning: file already exists, saving as %s", output_path.name)
     output_path.write_bytes(pdf_bytes)
     return output_path
 
 
-def main():
+def main() -> None:
+    load_dotenv()
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    handler = logging.StreamHandler()
+    handler.setFormatter(_BriefFormatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
+    logging.basicConfig(level=getattr(logging, log_level, logging.INFO), handlers=[handler])
+
     config = load_config()
 
     output_dir = Path(config["output_dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    print("Authenticating with Gmail...")
+    log.info("Authenticating with Gmail...")
     service = get_gmail_service()
 
-    print(
-        f"Searching for up to {config['max_pdfs']} matching emails "
-        f"from {config['sender_email']} with subject starting with '{config['subject_prefix']}'..."
+    log.info(
+        "Searching for up to %d matching emails from %s with subject starting with '%s'...",
+        config["max_pdfs"],
+        config["sender_email"],
+        config["subject_prefix"],
     )
     messages = search_pdf_emails(
         service,
@@ -205,51 +215,53 @@ def main():
     )
 
     if not messages:
-        print("No matching emails found. Check your SENDER_EMAIL and SUBJECT_PREFIX settings.")
+        log.warning("No matching emails found. Check your SENDER_EMAIL and SUBJECT_PREFIX settings.")
         return
 
-    print(f"Found {len(messages)} candidate email(s). Fetching metadata...")
+    log.info("Found %d candidate email(s). Fetching metadata...", len(messages))
 
     # Fetch metadata, apply prefix filter, sort descending (most recent first)
     emails_with_dates = []
     for msg in messages:
         date, subject = get_email_metadata(service, msg["id"])
         if not date:
-            print(f"  Warning: could not parse date for message {msg['id']}, skipping.")
+            log.warning("  Warning: could not parse date for message %s, skipping.", msg["id"])
             continue
         if not subject.lower().startswith(config["subject_prefix"].lower()):
-            print(f"  Skipping: subject does not start with prefix — \"{subject}\"")
+            log.info("  Skipping: subject does not start with prefix — \"%s\"", subject)
             continue
         emails_with_dates.append((msg["id"], date))
 
     emails_with_dates.sort(key=lambda x: x[1], reverse=True)
 
-    print(f"Processing {len(emails_with_dates)} PDF(s)...\n")
+    log.info("Processing %d PDF(s)...", len(emails_with_dates))
 
     for index, (message_id, date) in enumerate(emails_with_dates, start=1):
         label = date.strftime("%B %Y")
-        print(f"  [{index:02d}] {label} — downloading attachment...")
+        log.info("  [%02d] %s — downloading attachment...", index, label)
 
         attachment_id, filename = find_pdf_attachment(service, message_id)
         if not attachment_id:
-            print(f"       Warning: no PDF attachment found in email dated {label}, skipping.")
+            log.warning("       Warning: no PDF attachment found in email dated %s, skipping.", label)
             continue
 
         pdf_bytes = download_attachment(service, message_id, attachment_id)
 
-        print(f"       Decrypting PDF...")
+        log.info("       Decrypting PDF...")
         try:
             decrypted_bytes = decrypt_pdf(pdf_bytes, config["pdf_password"])
         except FileNotDecryptedError:
-            sys.exit(
-                f"Error: incorrect PDF password for email dated {label}. "
-                "Check PDF_PASSWORD in your .env file."
+            log.warning(
+                "       Warning: incorrect PDF password for email dated %s, skipping. "
+                "Check PDF_PASSWORD in your .env file.",
+                label,
             )
+            continue
 
         output_path = save_pdf(decrypted_bytes, output_dir, index, date, filename, config["overwrite_files"])
-        print(f"       Saved: {output_path}\n")
+        log.info("       Saved: %s", output_path)
 
-    print(f"Done. {len(emails_with_dates)} PDF(s) saved to '{output_dir}/'.")
+    log.info("Done. %d PDF(s) saved to '%s/'.", len(emails_with_dates), output_dir)
 
 
 if __name__ == "__main__":
