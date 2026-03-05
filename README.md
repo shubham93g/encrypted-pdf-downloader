@@ -1,6 +1,6 @@
-# Payslip Downloader
+# Encrypted PDF Downloader
 
-A Python script that fetches your payslip emails from Gmail, decrypts the password-protected PDF attachments, and saves them locally in reverse chronological order.
+A Python script that fetches emails from Gmail, decrypts the password-protected PDF attachments, and saves them locally in reverse chronological order.
 
 ## How it works
 
@@ -21,7 +21,7 @@ A Python script that fetches your payslip emails from Gmail, decrypts the passwo
 
 #### 1a. Create a project and enable the Gmail API
 
-1. Open [Google Cloud Console — Create Project](https://console.cloud.google.com/projectcreate), give it a name (e.g. `payslip-downloader`), and click **Create**
+1. Open [Google Cloud Console — Create Project](https://console.cloud.google.com/projectcreate), give it a name (e.g. `encrypted-pdf-downloader`), and click **Create**
 2. After the project is created, Google will show a notification — click **Select Project** to switch to it (or select it from the project dropdown in the top bar)
 3. Open [Gmail API — Enable](https://console.cloud.google.com/apis/library/gmail.googleapis.com) and click **Enable**
 
@@ -34,7 +34,7 @@ Before creating credentials, Google requires a consent screen to be set up.
 1. Open [OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent)
 2. Select **External** and click **Create**
 3. Fill in the required fields:
-   - **App name**: anything (e.g. `Payslip Downloader`)
+   - **App name**: anything (e.g. `Encrypted PDF Downloader`)
    - **User support email**: your Gmail address
    - **Developer contact email**: your Gmail address
 4. Click **Save and Continue** through the **Scopes** and **Test users** screens
@@ -45,7 +45,7 @@ Before creating credentials, Google requires a consent screen to be set up.
 
 1. Open [Credentials](https://console.cloud.google.com/apis/credentials) and click **+ Create Credentials > OAuth client ID**
 2. Set **Application type** to **Desktop app**
-3. Give it any name (e.g. `Payslip Downloader`) and click **Create**
+3. Give it any name (e.g. `Encrypted PDF Downloader`) and click **Create**
 4. In the confirmation dialog, click **Download JSON**
 5. Rename the downloaded file to `credentials.json` and place it in the project root
 
@@ -69,14 +69,14 @@ This will:
 Edit the `.env` file created by `setup.sh`:
 
 ```env
-SENDER_EMAIL=payroll@yourcompany.com        # Who sends the payslip emails
-SUBJECT_PREFIX=Payslip for the month of    # Subject must start with this (case-insensitive)
-PDF_PASSWORD=your_pdf_password              # Password to unlock the PDFs
-OUTPUT_DIR=./payslips                       # Where to save the decrypted PDFs
-MAX_PAYSLIPS=6                              # How many recent payslips to fetch
+SENDER_EMAIL=sender@example.com            # Who sends the emails with PDF attachments
+SUBJECT_PREFIX=Your subject prefix here    # Subject must start with this (case-insensitive)
+PDF_PASSWORD=your_pdf_password             # Password to unlock the PDFs
+OUTPUT_DIR=./pdfs                          # Where to save the decrypted PDFs
+MAX_PDFS=6                                 # How many recent PDFs to fetch
 ```
 
-> `OUTPUT_DIR` can be an absolute path (e.g. `/Users/you/Documents/payslips`) or a path relative to the project root.
+> `OUTPUT_DIR` can be an absolute path (e.g. `/Users/you/Documents/pdfs`) or a path relative to the project root.
 
 ### 4. Run
 
@@ -91,7 +91,7 @@ On the first run, your browser will open for Gmail authorization. Once authorize
 PDFs are saved in the output directory with filenames based on when the email was received:
 
 ```
-payslips/
+pdfs/
 ├── 01-March-2026.pdf     ← most recent
 ├── 02-February-2026.pdf
 ├── 03-January-2026.pdf
@@ -117,7 +117,7 @@ Download your OAuth credentials from Google Cloud Console and place them in the 
 **"incorrect PDF password"**
 Double-check the `PDF_PASSWORD` value in your `.env` file.
 
-**"No payslip emails found"**
+**"No matching emails found"**
 Verify that `SENDER_EMAIL` exactly matches the sender's address and that `SUBJECT_PREFIX` matches the beginning of the subject line. You can confirm by searching Gmail directly with `from:sender@example.com subject:firstword`.
 
 **"App has not completed Google verification"**

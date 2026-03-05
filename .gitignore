@@ -3,8 +3,8 @@
 credentials.json
 token.json
 
-# Downloaded payslips
-payslips/
+# Downloaded PDFs
+pdfs/
 
 # Python virtual environment
 .venv/
