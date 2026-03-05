@@ -11,7 +11,7 @@ A Python script that fetches emails from Gmail, decrypts the password-protected 
 
 ## Prerequisites
 
-- Python 3.9 or later
+- Python 3.12 (managed automatically via [pyenv](https://github.com/pyenv/pyenv) if installed)
 - A Google account with Gmail
 - A Google Cloud project with the Gmail API enabled
 
@@ -60,6 +60,7 @@ The first time you run the script, a browser window opens asking you to sign in 
 ```
 
 This will:
+- Install Python 3.12 via pyenv if needed (requires [pyenv](https://github.com/pyenv/pyenv) to be installed)
 - Create a `.venv` virtual environment
 - Install all Python dependencies
 - Copy `.env.example` to `.env` for you to fill in

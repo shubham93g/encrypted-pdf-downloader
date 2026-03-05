@@ -3,6 +3,25 @@ set -e
 
 echo "Setting up encrypted-pdf-downloader..."
 
+REQUIRED_VERSION=$(cat .python-version | tr -d '[:space:]')
+
+if command -v pyenv &>/dev/null; then
+  if ! pyenv versions --bare | grep -q "^${REQUIRED_VERSION}"; then
+    echo "Installing Python $REQUIRED_VERSION via pyenv..."
+    pyenv install "$REQUIRED_VERSION"
+  fi
+  pyenv local "$REQUIRED_VERSION"
+  export PATH="$(pyenv prefix)/bin:$PATH"
+else
+  PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
+  PYTHON_MAJOR_MINOR=$(echo "$PYTHON_VERSION" | cut -d. -f1,2)
+  if [ "$PYTHON_MAJOR_MINOR" != "$REQUIRED_VERSION" ]; then
+    echo "Error: Python $REQUIRED_VERSION is required (found $PYTHON_VERSION)."
+    echo "Install pyenv for automatic version management: https://github.com/pyenv/pyenv"
+    exit 1
+  fi
+fi
+
 python3 -m venv .venv
 source .venv/bin/activate
 
