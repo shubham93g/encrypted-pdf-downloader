@@ -62,7 +62,8 @@ def get_gmail_service():
 def search_payslip_emails(service, sender_email, subject_prefix, max_results):
     # Use the first word of the prefix as the Gmail search term (broad pre-filter)
     search_word = subject_prefix.split()[0]
-    query = f"from:{sender_email} subject:{search_word} has:attachment"
+    query = f"from:{sender_email} subject:{search_word}"
+    print(f"  Gmail query: {query}")
     result = (
         service.users()
         .messages()
