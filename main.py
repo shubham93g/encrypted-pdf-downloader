@@ -168,8 +168,14 @@ def save_pdf(pdf_bytes, output_dir, index, date, original_filename):
     month = date.strftime("%b")
     day = date.strftime("%d")
     stem = Path(original_filename).stem
-    filename = f"{index:02d}_{year}-{month}-{day}_{stem}.pdf"
-    output_path = Path(output_dir) / filename
+    base = f"{index:02d}_{year}-{month}-{day}_{stem}"
+    output_path = Path(output_dir) / f"{base}.pdf"
+    if output_path.exists():
+        counter = 2
+        while output_path.exists():
+            output_path = Path(output_dir) / f"{base} ({counter}).pdf"
+            counter += 1
+        print(f"       Warning: file already exists, saving as {output_path.name}")
     output_path.write_bytes(pdf_bytes)
     return output_path
 
