@@ -20,7 +20,7 @@ Single-file Python script that fetches password-protected PDFs from Gmail and sa
 ## Config variables (all in .env)
 - `SENDER_EMAIL` — sender address to filter by
 - `SUBJECT_KEYWORD` — keyword that must appear anywhere in the subject (case-insensitive)
-- `PDF_PASSWORD` — shared PDF decryption password (optional if PDFs are unencrypted)
+- `PDF_PASSWORDS` — comma-separated list of PDF decryption passwords to try in order (optional if PDFs are unencrypted)
 - `OUTPUT_DIR` — where to save PDFs (default: `./pdfs`)
 - `MAX_PDFS` — how many recent PDFs to fetch (default: 6)
 - `OVERWRITE_FILES` — set to `true` to overwrite existing files; default `false` appends `(2)`, `(3)`, … suffix

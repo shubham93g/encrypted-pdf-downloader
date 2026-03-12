@@ -72,7 +72,7 @@ Edit the `.env` file created by `setup.sh`:
 ```env
 SENDER_EMAIL=sender@example.com            # Who sends the emails with PDF attachments
 SUBJECT_KEYWORD=Your subject keyword here  # Keyword that must appear anywhere in the subject (case-insensitive)
-PDF_PASSWORD=your_pdf_password             # Password to unlock the PDFs (omit if PDFs are not encrypted)
+PDF_PASSWORDS=password1,password2          # Comma-separated passwords to try when unlocking PDFs (omit if PDFs are not encrypted)
 OUTPUT_DIR=./pdfs                          # Where to save the decrypted PDFs
 MAX_PDFS=6                                 # How many recent PDFs to fetch
 OVERWRITE_FILES=false                      # Set to true to overwrite existing files instead of appending a suffix
@@ -122,8 +122,8 @@ The Gmail API is not enabled in the project your credentials belong to. Open [Gm
 **"credentials.json not found"**
 Download your OAuth credentials from Google Cloud Console and place them in the project root. See step 1 above.
 
-**"incorrect PDF password"**
-Double-check the `PDF_PASSWORD` value in your `.env` file.
+**"No password matched"**
+Double-check the `PDF_PASSWORDS` value in your `.env` file. Each comma-separated entry is tried in order.
 
 **"No matching emails found"**
 Verify that `SENDER_EMAIL` exactly matches the sender's address and that `SUBJECT_KEYWORD` appears in the subject line. You can confirm by searching Gmail directly with `from:sender@example.com subject:keyword`.
