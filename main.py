@@ -73,7 +73,7 @@ def get_gmail_service() -> Any:
                 )
                 Path(TOKEN_FILE).unlink(missing_ok=True)
                 creds = None
-        else:
+        if not creds:
             if not Path(CREDENTIALS_FILE).exists():
                 sys.exit(
                     f"Error: '{CREDENTIALS_FILE}' not found. "
