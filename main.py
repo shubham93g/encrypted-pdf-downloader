@@ -28,6 +28,7 @@ log = logging.getLogger(__name__)
 from pypdf import PdfReader, PdfWriter
 from pypdf.errors import FileNotDecryptedError
 from dotenv import load_dotenv
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -48,7 +49,7 @@ def load_config() -> dict[str, Any]:
     return {
         "sender_email": os.getenv("SENDER_EMAIL"),
         "subject_keyword": os.getenv("SUBJECT_KEYWORD"),
-        "pdf_password": os.getenv("PDF_PASSWORD", ""),
+        "pdf_passwords": [p.strip() for p in os.getenv("PDF_PASSWORDS", "").split(",") if p.strip()],
         "output_dir": os.getenv("OUTPUT_DIR", "./pdfs"),
         "max_pdfs": int(os.getenv("MAX_PDFS", "6")),
         "overwrite_files": os.getenv("OVERWRITE_FILES", "false").strip().lower() == "true",
@@ -59,12 +60,24 @@ def get_gmail_service() -> Any:
     creds = None
 
     if Path(TOKEN_FILE).exists():
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+        try:
+            creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+        except (ValueError, KeyError):
+            log.warning("token.json is corrupt or invalid — re-authorizing.")
+            Path(TOKEN_FILE).unlink(missing_ok=True)
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
+            try:
+                creds.refresh(Request())
+            except RefreshError:
+                log.warning(
+                    "OAuth token has expired or been revoked — re-authorizing. "
+                    "A browser window will open."
+                )
+                Path(TOKEN_FILE).unlink(missing_ok=True)
+                creds = None
+        if not creds:
             if not Path(CREDENTIALS_FILE).exists():
                 sys.exit(
                     f"Error: '{CREDENTIALS_FILE}' not found. "
@@ -156,19 +169,22 @@ def download_attachment(service: Any, message_id: str, attachment_id: str) -> by
     return base64.urlsafe_b64decode(data)
 
 
-def decrypt_pdf(pdf_bytes: bytes, password: str) -> bytes:
+def decrypt_pdf(pdf_bytes: bytes, passwords: list[str]) -> bytes:
     reader = PdfReader(io.BytesIO(pdf_bytes))
     if not reader.is_encrypted:
         log.info("       PDF is not encrypted — saving as-is.")
         return pdf_bytes
-    if reader.decrypt(password) == 0:
-        raise FileNotDecryptedError("Incorrect password")
-    writer = PdfWriter()
-    for page in reader.pages:
-        writer.add_page(page)
-    out = io.BytesIO()
-    writer.write(out)
-    return out.getvalue()
+    for password in passwords:
+        if reader.decrypt(password) != 0:
+            writer = PdfWriter()
+            for page in reader.pages:
+                writer.add_page(page)
+            out = io.BytesIO()
+            writer.write(out)
+            return out.getvalue()
+        # decrypt() mutates reader state — re-open for next attempt
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+    raise FileNotDecryptedError("No password matched")
 
 
 def save_pdf(pdf_bytes: bytes, output_dir: Path, index: int, date: datetime, original_filename: str, overwrite: bool = False) -> Path:
@@ -249,11 +265,11 @@ def main() -> None:
         pdf_bytes = download_attachment(service, message_id, attachment_id)
 
         try:
-            decrypted_bytes = decrypt_pdf(pdf_bytes, config["pdf_password"])
+            decrypted_bytes = decrypt_pdf(pdf_bytes, config["pdf_passwords"])
         except FileNotDecryptedError:
             log.warning(
-                "       Warning: incorrect PDF password for email \"%s\", skipping. "
-                "Check PDF_PASSWORD in your .env file.",
+                "       Warning: no PDF password matched for email \"%s\", skipping. "
+                "Check PDF_PASSWORDS in your .env file.",
                 subject,
             )
             continue

@@ -34,7 +34,7 @@ if [ ! -f .env ]; then
   echo ".env created from .env.example — fill in your values before running:"
   echo "  SENDER_EMAIL    — email address that sends the PDFs"
   echo "  SUBJECT_PREFIX  — subject line prefix to filter emails"
-  echo "  PDF_PASSWORD    — password to decrypt the PDF attachments"
+  echo "  PDF_PASSWORDS   — comma-separated passwords to decrypt the PDF attachments"
   echo "  OUTPUT_DIR      — where to save PDFs (default: ./pdfs)"
   echo "  MAX_PDFS        — how many recent PDFs to fetch (default: 6)"
 else
