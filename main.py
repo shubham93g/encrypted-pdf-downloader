@@ -60,7 +60,11 @@ def get_gmail_service() -> Any:
     creds = None
 
     if Path(TOKEN_FILE).exists():
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+        try:
+            creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+        except (ValueError, KeyError):
+            log.warning("token.json is corrupt or invalid — re-authorizing.")
+            Path(TOKEN_FILE).unlink(missing_ok=True)
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
