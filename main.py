@@ -28,6 +28,7 @@ log = logging.getLogger(__name__)
 from pypdf import PdfReader, PdfWriter
 from pypdf.errors import FileNotDecryptedError
 from dotenv import load_dotenv
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -63,7 +64,15 @@ def get_gmail_service() -> Any:
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+            try:
+                creds.refresh(Request())
+            except RefreshError:
+                log.warning(
+                    "OAuth token has expired or been revoked — re-authorizing. "
+                    "A browser window will open."
+                )
+                Path(TOKEN_FILE).unlink(missing_ok=True)
+                creds = None
         else:
             if not Path(CREDENTIALS_FILE).exists():
                 sys.exit(

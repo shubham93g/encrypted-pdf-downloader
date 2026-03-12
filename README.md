@@ -132,7 +132,7 @@ Verify that `SENDER_EMAIL` exactly matches the sender's address and that `SUBJEC
 Your OAuth app is in Testing mode — only approved test users can authorize it. Open the [OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent), scroll to **Test users**, click **+ Add Users**, and add your Gmail address.
 
 **Token expired / authorization error**
-Delete `token.json` and run `./run.sh` again to re-authorize.
+The script will automatically detect an expired or revoked token, delete `token.json`, and open a browser window to re-authorize. Simply re-run `./run.sh` if you see this message.
 
 **Permission denied running scripts**
 ```bash
